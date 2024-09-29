@@ -35,3 +35,12 @@ class Agent:
         :return: A evaluation of the game state
         """
         return self.eval_fn(game)
+
+
+    def heuristic(self, game) -> float:
+        """
+        The heuristic function which evaluates a game state
+        It counts the possible connect 4s for each player and returns the difference
+        :param game:
+        :return: a float evaluating the position
+        """

@@ -14,21 +14,28 @@ class Board:
         self.player_1 = player_1
         self.player_2 = player_2
 
+        self.possible_actions = [x for x in range(0, 7)]
+
     def copy(self):
+        """
+        Gives a copy of the current board state
+
+        :return: A copy of the board state
+        """
         board = Board(self.player_1, self.player_2)
         board.size = self.size
         board.board = self.board
+        board.possible_actions = self.possible_actions
         return board
 
-    def get_game(self) -> list:
-        """
-        Return our game state
-
-        :return: board
-        """
-        return self.board
-
     def forecast_move(self, move, player) -> tuple:
+        """
+        Creates a copy of the board with a new move being played
+
+        :param move: The move to apply
+        :param player: The player making the move
+        :return: A copy of the board, result of the action
+        """
         new_game = self.copy()
         result = new_game.drop(move, player)
         return new_game, result
@@ -61,6 +68,9 @@ class Board:
             if self.board[x][col] != 0:
                 row = x + 1
                 break
+
+        if row == 5:
+            self.possible_actions.remove(col)
 
         if player == self.player_1:
             self.board[row][col] = 1
@@ -148,3 +158,19 @@ class Board:
             return True
         else:
             return False
+
+    def get_actions(self) -> list:
+        """
+        Returns our possible actions
+
+        :return: A list of the actions
+        """
+        return self.possible_actions
+
+    def get_game(self) -> list:
+        """
+        Return our game state
+
+        :return: board
+        """
+        return self.board
