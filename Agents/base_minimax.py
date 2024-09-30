@@ -1,4 +1,7 @@
-def minimax(player, game, time_remaining, depth) -> tuple:
+from Game.board import Board
+
+
+def minimax(player, game: Board, time_remaining, depth: int) -> tuple:
     """
     The base call of the minimax search
     :param player: The player making the move (our agent)
@@ -11,7 +14,7 @@ def minimax(player, game, time_remaining, depth) -> tuple:
     return action
 
 
-def get_max(player, game, depth, time_left, terminate) -> tuple:
+def get_max(player, game: Board, depth: int, time_left, terminate: bool) -> tuple:
     """
     A function which finds the highest evaluated move of the children
     :param player: The player making the move (our agent)
@@ -51,7 +54,7 @@ def get_max(player, game, depth, time_left, terminate) -> tuple:
     return val, move
 
 
-def get_min(player, game, depth, time_left, terminate) -> tuple:
+def get_min(player, game: Board, depth: int, time_left, terminate: bool) -> tuple:
     """
     A function which finds the lowest evaluated move of the children
     :param player: The current player making the move (our agent)

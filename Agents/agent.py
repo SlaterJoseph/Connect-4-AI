@@ -1,9 +1,14 @@
+from typing import Callable
+
+from Game.board import Board
+
+
 class Agent:
     """
-    An agent which will make Connect 4 moves against a opponent
+    An agent which will make Connect 4 moves against an opponent
     """
 
-    def __init__(self, depth, eval_fn, search_fn):
+    def __init__(self, depth: int, eval_fn: Callable, search_fn: Callable):
         """
         Initializes the agent
 
@@ -16,7 +21,7 @@ class Agent:
         self.search_fn = search_fn
 
 
-    def move(self, game, time_remaining) -> tuple:
+    def move(self, game: Board, time_remaining) -> tuple:
         """
         A function calling the agent to make a move
 
@@ -27,7 +32,7 @@ class Agent:
         best_move, utility = self.search_fn(self, game, time_remaining, self.depth)
         return best_move
 
-    def utility(self, game) -> float:
+    def utility(self, game: Board) -> float:
         """
         A function which evaluates a game state
 
@@ -37,10 +42,3 @@ class Agent:
         return self.eval_fn(game)
 
 
-    def heuristic(self, game) -> float:
-        """
-        The heuristic function which evaluates a game state
-        It counts the possible connect 4s for each player and returns the difference
-        :param game:
-        :return: a float evaluating the position
-        """

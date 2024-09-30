@@ -1,5 +1,8 @@
+from Game.player import Player
+
+
 class Board:
-    def __init__(self, player_1, player_2):
+    def __init__(self, player_1: Player, player_2: Player):
         """
         Initialize our game
         player_1: The first player
@@ -15,6 +18,15 @@ class Board:
         self.player_2 = player_2
 
         self.possible_actions = [x for x in range(0, 7)]
+        self.player_1_turn = True
+
+    def __str__(self) -> str:
+        """
+        A function which prints out the board
+        :return: A string format of the board
+        """
+        string_board = '\n'.join([' | '.join(map(str, row)) for row in self.board])
+        return string_board
 
     def copy(self):
         """
@@ -28,7 +40,7 @@ class Board:
         board.possible_actions = self.possible_actions
         return board
 
-    def forecast_move(self, move, player) -> tuple:
+    def forecast_move(self, move: int, player: Player) -> tuple:
         """
         Creates a copy of the board with a new move being played
 
@@ -40,7 +52,7 @@ class Board:
         result = new_game.drop(move, player)
         return new_game, result
 
-    def col_full(self, col) -> bool:
+    def col_full(self, col: int) -> bool:
         """
         Checks if a column is full
 
@@ -51,7 +63,7 @@ class Board:
             return True
         return False
 
-    def drop(self, col, player) -> int:
+    def drop(self, col: int, player: Player) -> int:
         """
         Drop the piece
         :param col: The column to drop the piece in
@@ -77,6 +89,7 @@ class Board:
         else:
             self.board[row][col] = 2
 
+        self.player_1_turn = not self.player_1_turn
         winner = self.terminate(row, col)
 
         if winner:
@@ -174,3 +187,69 @@ class Board:
         :return: board
         """
         return self.board
+
+    def get_turn(self) -> bool:
+        """
+        Returns True if it is player 1's turn
+        :return: boolean indicating whose turn it is
+        """
+        return self.player_1_turn
+
+    def possible_wins_remaining(self) -> tuple:
+        """
+        Checks for all possible wins of each player
+        :return: A tuple of players possible win, opponents possible wins
+        """
+
+        if self.player_1_turn:
+            turn_of = 1
+            opp = 2
+        else:
+            turn_of = 2
+            opp = 1
+
+        def check_window(window: list, target: int) -> bool:
+            """
+            Checks if a window can result in a win for a player
+            :param window: The range to check
+            :param target: The player's variable to check
+            :return:
+            """
+            return all(cell == target or cell == 0 for cell in window)
+
+        player_wins = 0
+        opponent_wins = 0
+
+        for r in range(self.rows):
+            for c in range(self.cols - 3):
+                window = [self.board[r][c + i] for i in range(4)]
+                if check_window(window, turn_of):
+                    player_wins += 1
+                if check_window(window, opp):
+                    opponent_wins += 1
+
+        for c in range(self.cols):
+            for r in range(self.rows - 3):
+                window = [self.board[r + i][c] for i in range(4)]
+                if check_window(window, turn_of):
+                    player_wins += 1
+                if check_window(window, opp):
+                    opponent_wins += 1
+
+        for r in range(self.rows - 3):
+            for c in range(self.cols - 3):
+                window = [self.board[r + i][c + i] for i in range(4)]
+                if check_window(window, turn_of):
+                    player_wins += 1
+                if check_window(window, opp):
+                    opponent_wins += 1
+
+        for r in range(3, self.rows):
+            for c in range(self.cols - 3):
+                window = [self.board[r - i][c + i] for i in range(4)]
+                if check_window(window, turn_of):
+                    player_wins += 1
+                if check_window(window, opp):
+                    opponent_wins += 1
+
+        return player_wins, opponent_wins
