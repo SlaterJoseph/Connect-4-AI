@@ -1,3 +1,4 @@
+import numpy as np
 from Game.player import Player
 
 
@@ -12,7 +13,7 @@ class Board:
         self.cols = 7
         self.size = 0
 
-        self.board = [[0 for _ in range(self.rows)] for _ in range(self.cols)]
+        self.board = np.zeros((self.rows, self.cols))
 
         self.player_1 = player_1
         self.player_2 = player_2
@@ -73,14 +74,7 @@ class Board:
             1 - Winner Found
             2 - Draw
         """
-
-        # Finds the proper place to drop the piece into
-        row = 5
-        for x in range(5, -1, -1):
-            if self.board[x][col] != 0:
-                row = x + 1
-                break
-
+        row = np.max(np.where(self.board[:, col] == 0))
         if row == 5:
             self.possible_actions.remove(col)
 
@@ -92,13 +86,7 @@ class Board:
         self.player_1_turn = not self.player_1_turn
         winner = self.terminate(row, col)
 
-        if winner:
-            terminate = 1
-        elif not winner and self.size == 42:
-            terminate = 2
-        else:
-            terminate = 0
-
+        terminate = 1 if winner else 2 if self.size == 42 else 0
         return terminate
 
     def terminate(self, x, y) -> bool:
@@ -112,60 +100,32 @@ class Board:
         def across():  # Row check
             row = self.board[x]
             for loc in range(3, 7):
-                cell_1, cell_2, cell_3, cell_4 = row[loc - 3], row[loc - 2], row[loc - 1], row[loc]
-                if cell_1 == cell_2 == cell_3 == cell_4 and cell_1 != 0:
+                if np.all(row[loc: loc + 4] == row[loc]) and row[loc] != 0:
                     return True
-                return False
+            return False
+
 
         def up():  # Col check
-            for loc in range(3, 6):
-                cell_1, cell_2, cell_3, cell_4 = (self.board[loc - 3][y],
-                                                  self.board[loc - 2][y],
-                                                  self.board[loc - 1][y],
-                                                  self.board[loc][y])
-                if cell_1 == cell_2 == cell_3 == cell_4 and cell_1 != 0:
+            col = self.board[:, y]
+            for start in range(len(col) - 3):
+                if np.all(col[start:start + 4] == col[start]) and col[start] != 0:
                     return True
             return False
 
         def diagonal_1():  # 0,0 to 5,6
-            chip = self.board[x][y]
-            if chip == 0:  # Edge case
-                return False
-
-            x_down, y_down = x - 1, y - 1  # To top left corner
-            count = 1
-            while x_down > -1 and y_down > -1 and self.board[x_down][y_down] == chip:
-                count += 1
-                x_down -= 1
-                y_down -= 1
-
-            x_up, y_up = x + 1, y + 1  # To bottom right corner
-            while x_up < 6 and y_up < 7 and self.board[x_up][y_up] == chip:
-                count += 1
-                x_up += 1
-                y_up += 1
-
-            return count >= 4
+            diag = np.diagonal(self.board, offset=(y - x))
+            for start in range(len(diag) - 3):
+                if np.all(diag[start:start + 4] == diag[start]) and diag[start] != 0:
+                    return True
+            return False
 
         def diagonal_2():  # 0,6 to 5,0
-            chip = self.board[x][y]
-            if chip == 0:  # edge case
-                return False
-
-            x_down, y_up = x - 1, y + 1  # To top left corner
-            count = 1
-            while x_down > -1 and y_up < 7 and self.board[x_down][y_up] == chip:
-                count += 1
-                x_down -= 1
-                y_up += 1
-
-            x_up, y_down = x + 1, y - 1  # To bottom right corner
-            while x_up < 6 and y_down > -1 and self.board[x_up][y_down] == chip:
-                count += 1
-                x_up += 1
-                y_down -= 1
-
-                return count >= 4
+            flipped_board = np.fliplr(self.board)
+            anti_diag = np.diagonal(flipped_board, offset=(y - (5 - x)))
+            for start in range(len(anti_diag) - 3):
+                if np.all(anti_diag[start:start + 4] == anti_diag[start]) and anti_diag[start] != 0:
+                    return True
+            return False
 
         if across() or up() or diagonal_1() or diagonal_2():
             return True
@@ -208,48 +168,39 @@ class Board:
             turn_of = 2
             opp = 1
 
-        def check_window(window: list, target: int) -> bool:
-            """
-            Checks if a window can result in a win for a player
-            :param window: The range to check
-            :param target: The player's variable to check
-            :return:
-            """
-            return all(cell == target or cell == 0 for cell in window)
-
         player_wins = 0
         opponent_wins = 0
 
+        def check_windows(windows, target):
+            return np.sum(np.all((windows == target) | (windows == 0), axis=1))
+
+        # Row checks
         for r in range(self.rows):
-            for c in range(self.cols - 3):
-                window = [self.board[r][c + i] for i in range(4)]
-                if check_window(window, turn_of):
-                    player_wins += 1
-                if check_window(window, opp):
-                    opponent_wins += 1
+            row_windows = np.lib.stride_tricks.sliding_window_view(self.board[r], window_shape=4)
+            player_wins += check_windows(row_windows, turn_of)
+            opponent_wins += check_windows(row_windows, opp)
 
+        # Column checks
         for c in range(self.cols):
-            for r in range(self.rows - 3):
-                window = [self.board[r + i][c] for i in range(4)]
-                if check_window(window, turn_of):
-                    player_wins += 1
-                if check_window(window, opp):
-                    opponent_wins += 1
+            col_windows = np.lib.stride_tricks.sliding_window_view(self.board[:, c], window_shape=4)
+            player_wins += check_windows(col_windows, turn_of)
+            opponent_wins += check_windows(col_windows, opp)
 
-        for r in range(self.rows - 3):
-            for c in range(self.cols - 3):
-                window = [self.board[r + i][c + i] for i in range(4)]
-                if check_window(window, turn_of):
-                    player_wins += 1
-                if check_window(window, opp):
-                    opponent_wins += 1
+        # Diagonal checks (top-left to bottom-right)
+        for offset in range(-self.rows + 4, self.cols - 3):
+            diagonal = np.diagonal(self.board, offset=offset)
+            if len(diagonal) >= 4:
+                diag_windows = np.lib.stride_tricks.sliding_window_view(diagonal, window_shape=4)
+                player_wins += check_windows(diag_windows, turn_of)
+                opponent_wins += check_windows(diag_windows, opp)
 
-        for r in range(3, self.rows):
-            for c in range(self.cols - 3):
-                window = [self.board[r - i][c + i] for i in range(4)]
-                if check_window(window, turn_of):
-                    player_wins += 1
-                if check_window(window, opp):
-                    opponent_wins += 1
+        # Diagonal checks (top-right to bottom-left)
+        flipped_board = np.fliplr(self.board)
+        for offset in range(-self.rows + 4, self.cols - 3):
+            anti_diagonal = np.diagonal(flipped_board, offset=offset)
+            if len(anti_diagonal) >= 4:
+                anti_diag_windows = np.lib.stride_tricks.sliding_window_view(anti_diagonal, window_shape=4)
+                player_wins += check_windows(anti_diag_windows, turn_of)
+                opponent_wins += check_windows(anti_diag_windows, opp)
 
         return player_wins, opponent_wins
